@@ -79,30 +79,34 @@ func signalWorkflow(ctx workflow.Context, eventID string) error {
 	var remindAt time.Time
 	remindAtCh.Receive(ctx, &remindAt)
 
+	var timerCancelCtx workflow.Context
+	var cancelTimerHandler func()
+
+	receiveSignal := func(c workflow.Channel, more bool) {
+		logger.Info("RemindAt signal received.")
+		logger.Info("Cancel outstanding timer.")
+		cancelTimerHandler()
+
+		c.Receive(ctx, &remindAt)
+		logger.Sugar().Infof("Update remind at to: %v", remindAt)
+	}
 	timerFired := false
+	fireTimer := func(f workflow.Future) {
+		logger.Info("Timer Fired.")
+		timerFired = true
+	}
+
 	for !timerFired {
+		//Setup a timer to fire when we want the notification
 		delay := remindAt.Sub(workflow.Now(ctx))
-
-		selector := workflow.NewSelector(ctx)
-
 		logger.Sugar().Infof("Setting up a timer to fire after: %v", delay)
-		timerCancelCtx, cancelTimerHandler := workflow.WithCancel(ctx)
+		timerCancelCtx, cancelTimerHandler = workflow.WithCancel(ctx)
 		timerFuture := workflow.NewTimer(timerCancelCtx, delay)
-		selector.AddFuture(timerFuture, func(f workflow.Future) {
-			logger.Info("Timer Fired.")
-			timerFired = true
-		})
 
-		selector.AddReceive(remindAtCh, func(c workflow.Channel, more bool) {
-			logger.Info("RemindAt signal received.")
-			logger.Info("Cancel outstanding timer.")
-			cancelTimerHandler()
-
-			c.Receive(ctx, &remindAt)
-			logger.Sugar().Infof("Update remind at to: %v", remindAt)
-		})
-
-		logger.Info("Waiting for timer to fire.")
+		//Wait for timer or signal
+		selector := workflow.NewSelector(ctx)
+		selector.AddFuture(timerFuture, fireTimer)
+		selector.AddReceive(remindAtCh, receiveSignal)
 		selector.Select(ctx)
 	}
 
