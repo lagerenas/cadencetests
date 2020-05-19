@@ -10,9 +10,9 @@ import (
 	"go.uber.org/cadence/workflow"
 )
 
-const SignalDomain = "test-signal"
+const SignalDomain = "test-signals"
 
-func inti() {
+func init() {
 	workflow.Register(signalWorkflow)
 	activity.Register(sendReminderActivity)
 }
@@ -28,11 +28,12 @@ func NewSignalReminder(cc cadenceclient.Client) *SignalReminder {
 }
 
 func (sr *SignalReminder) CreateReminder(ctx context.Context, m Event) error {
-	err := sr.setReminder(ctx, m, 15*time.Minute)
+	err := sr.setReminder(ctx, m, 1*time.Minute)
 	if err != nil {
 		return err
 	}
-	return sr.setReminder(ctx, m, 24*time.Hour)
+	//return sr.setReminder(ctx, m, 24*time.Hour)
+	return nil
 }
 
 func (sr *SignalReminder) UpdateReminder(ctx context.Context, m Event) error {
@@ -52,13 +53,14 @@ func (sr *SignalReminder) CancelReminder(ctx context.Context, m Event) error {
 }
 
 func (sr *SignalReminder) setReminder(ctx context.Context, m Event, period time.Duration) error {
-
+	fmt.Printf("Event in set reminder %#v", m)
 	workflowID := fmt.Sprintf("reminder-for-%v-%v", m.ID, period)
-	if m.Cancelled {
+	remindAt := m.Start.Add(-1 * period)
+	if m.Cancelled || remindAt.Before(time.Now()) {
 		err := sr.CadenceClient.CancelWorkflow(ctx, workflowID, "")
 		return err
 	} else {
-		remindAt := m.Start.Add(-1 * period)
+
 		workflowOptions := cadenceclient.StartWorkflowOptions{
 			ID:                           workflowID,
 			TaskList:                     SignalDomain,
@@ -70,7 +72,7 @@ func (sr *SignalReminder) setReminder(ctx context.Context, m Event, period time.
 	}
 }
 
-func signalWorkflow(ctx workflow.Context) error {
+func signalWorkflow(ctx workflow.Context, eventID string) error {
 	logger := workflow.GetLogger(ctx)
 	remindAtCh := workflow.GetSignalChannel(ctx, "RemindAt")
 
@@ -79,7 +81,7 @@ func signalWorkflow(ctx workflow.Context) error {
 
 	timerFired := false
 	for !timerFired {
-		delay := workflow.Now(ctx).Sub(remindAt)
+		delay := remindAt.Sub(workflow.Now(ctx))
 
 		selector := workflow.NewSelector(ctx)
 
@@ -104,11 +106,21 @@ func signalWorkflow(ctx workflow.Context) error {
 		selector.Select(ctx)
 	}
 
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		ScheduleToStartTimeout: 3 * time.Second,
+		StartToCloseTimeout:    1 * time.Minute,
+	})
+	err := workflow.ExecuteActivity(ctx, sendReminderActivity, eventID).Get(ctx, nil)
+	if err != nil {
+		return err
+	}
+
 	workflow.GetLogger(ctx).Info("Workflow completed.")
 
 	return nil
 }
 
-func sendReminderActivity(ctx context.Context, eventID string) {
-
+func sendReminderActivity(ctx context.Context, eventID string) error {
+	fmt.Printf("Sending reminder for %v\n", eventID)
+	return nil
 }

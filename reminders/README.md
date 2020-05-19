@@ -16,3 +16,6 @@ View the workflow in Cadence UI at http://localhost:8088/domain/test-signals/wor
 
 ### Run the server
 From this directory run `go run server/main.go`
+
+### Signal the workflow
+http://localhost:8090/?eventID=3&minutes=17

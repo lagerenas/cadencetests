@@ -1,18 +1,16 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/lagerenas/cadencetests/helper"
 	"github.com/lagerenas/cadencetests/reminders/internal"
 )
 
 func main() {
-	ctx := context.Background()
+	//ctx := context.Background()
 	fmt.Printf("Starting shared server\n")
 
 	cadenceService, err := helper.NewService("localhost:7933")
@@ -31,48 +29,65 @@ func main() {
 	fmt.Printf("Cadence running\n")
 
 	signalReminder := internal.NewSignalReminder(cadenceClient)
+	internal.RS = signalReminder
+	/*
+		eventID := "2"
 
-	eventID := "1"
+		err = signalReminder.CreateReminder(ctx, internal.Event{
+			ID:          eventID,
+			Start:       time.Now().Add(1 * time.Hour),
+			End:         time.Now().Add(2 * time.Hour),
+			Cancelled:   false,
+			Description: "Event created",
+		})
+		if err != nil {
+			fmt.Printf("error creating reminder: %v\n", err)
+		}
 
-	signalReminder.CreateReminder(ctx, internal.Event{
-		ID:          eventID,
-		Start:       time.Now().Add(1 * time.Hour),
-		End:         time.Now().Add(2 * time.Hour),
-		Cancelled:   false,
-		Description: "Event created",
-	})
+		err = signalReminder.UpdateReminder(ctx, internal.Event{
+			ID:          eventID,
+			Start:       time.Now().Add(3 * time.Hour),
+			End:         time.Now().Add(4 * time.Hour),
+			Cancelled:   false,
+			Description: "Event move back 2 hours",
+		})
+		if err != nil {
+			fmt.Printf("error creating reminder: %v\n", err)
+		}
 
-	signalReminder.UpdateReminder(ctx, internal.Event{
-		ID:          eventID,
-		Start:       time.Now().Add(3 * time.Hour),
-		End:         time.Now().Add(4 * time.Hour),
-		Cancelled:   false,
-		Description: "Event move back 2 hours",
-	})
+		err = signalReminder.UpdateReminder(ctx, internal.Event{
+			ID:          eventID,
+			Start:       time.Now().Add(-1 * time.Hour),
+			End:         time.Now().Add(2 * time.Hour),
+			Cancelled:   false,
+			Description: "move to the past",
+		})
+		if err != nil {
+			fmt.Printf("error creating reminder: %v\n", err)
+		}
 
-	signalReminder.UpdateReminder(ctx, internal.Event{
-		ID:          eventID,
-		Start:       time.Now().Add(-1 * time.Hour),
-		End:         time.Now().Add(2 * time.Hour),
-		Cancelled:   false,
-		Description: "move to the past",
-	})
+		err = signalReminder.UpdateReminder(ctx, internal.Event{
+			ID:          eventID,
+			Start:       time.Now().Add(1 * time.Hour),
+			End:         time.Now().Add(2 * time.Hour),
+			Cancelled:   false,
+			Description: "Event moved back to original time",
+		})
+		if err != nil {
+			fmt.Printf("error creating reminder: %v\n", err)
+		}
 
-	signalReminder.UpdateReminder(ctx, internal.Event{
-		ID:          eventID,
-		Start:       time.Now().Add(1 * time.Hour),
-		End:         time.Now().Add(2 * time.Hour),
-		Cancelled:   false,
-		Description: "Event moved back to original time",
-	})
-
-	signalReminder.CancelReminder(ctx, internal.Event{
-		ID:          eventID,
-		Start:       time.Now().Add(1 * time.Hour),
-		End:         time.Now().Add(2 * time.Hour),
-		Cancelled:   true,
-		Description: "Event created",
-	})
+		err = signalReminder.CancelReminder(ctx, internal.Event{
+			ID:          eventID,
+			Start:       time.Now().Add(1 * time.Hour),
+			End:         time.Now().Add(2 * time.Hour),
+			Cancelled:   true,
+			Description: "Event created",
+		})
+		if err != nil {
+			fmt.Printf("error creating reminder: %v\n", err)
+		}
+	*/
 
 	http.HandleFunc("/", internal.Processor)
 	http.ListenAndServe(":8090", nil)
