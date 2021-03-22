@@ -3,7 +3,6 @@ module github.com/lagerenas/cadencetests/sharedService
 go 1.13
 
 require (
-	github.com/uber-go/tally v3.3.1+incompatible
+	github.com/lagerenas/cadencetests/helper v0.0.0-20210322194305-a40076d1a668
 	go.uber.org/cadence v0.10.5
-	go.uber.org/yarpc v1.38.0
 )

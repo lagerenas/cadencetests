@@ -5,18 +5,19 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/lagerenas/cadencetests/helper"
 	"github.com/lagerenas/cadencetests/sharedService/internal"
 )
 
 func main() {
 	fmt.Printf("Starting shared server\n")
 
-	cadenceClient, err := NewService("localhost:7933", "test-domain")
+	cadenceClient, err := helper.NewService("localhost:7933")
 	if err != nil {
 		fmt.Printf("Error starting cadence client: %v\n", err)
 		os.Exit(1)
 	}
-	StartCadenceWorker(cadenceClient, "test-domain", "messanger")
+	helper.StartCadenceWorker(cadenceClient, "test-domain", "messanger")
 
 	fmt.Printf("Cadence running\n")
 
