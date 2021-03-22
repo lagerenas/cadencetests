@@ -63,8 +63,8 @@ func RunWorkflow(ctx context.Context, CadenceClient client.Client, params Params
 		RetryPolicy: &cadence.RetryPolicy{
 			InitialInterval:          time.Second,
 			BackoffCoefficient:       2.0,
-			MaximumInterval:          1 * time.Minute,
-			ExpirationInterval:       1 * time.Minute,
+			MaximumInterval:          10 * time.Second,
+			ExpirationInterval:       10 * time.Minute,
 			MaximumAttempts:          0,
 			NonRetriableErrorReasons: nil,
 		},
@@ -104,7 +104,7 @@ func Workflow(ctx workflow.Context, params Params) error {
 		RetryPolicy: &cadence.RetryPolicy{
 			InitialInterval:          time.Second,
 			BackoffCoefficient:       2.0,
-			MaximumInterval:          1 * time.Minute,
+			MaximumInterval:          10 * time.Second,
 			ExpirationInterval:       1 * time.Minute,
 			MaximumAttempts:          0,
 			NonRetriableErrorReasons: nil,
@@ -116,7 +116,7 @@ func Workflow(ctx workflow.Context, params Params) error {
 		RetryPolicy: &cadence.RetryPolicy{
 			InitialInterval:          time.Second,
 			BackoffCoefficient:       2.0,
-			MaximumInterval:          1 * time.Minute,
+			MaximumInterval:          10 * time.Second,
 			ExpirationInterval:       1 * time.Minute,
 			MaximumAttempts:          0,
 			NonRetriableErrorReasons: nil,
