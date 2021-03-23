@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
@@ -24,24 +25,24 @@ func init() {
 
 // Use these query params to trigger different workflows from http://localhost:8090/?
 type Params struct {
-	PanicWorkflow bool
-	PanicActivity int64
-	AsyncWorkflow bool
-	LocalActivity bool
+	PanicWorkflow     bool
+	ActivityErrorType string
+	AsyncWorkflow     bool
+	LocalActivity     bool
 }
 
 func Processor(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		return
 	}
-	fmt.Printf("Start processor\n")
+	fmt.Printf("Start processor for %v %v\n", r.Method, r.URL.String())
 
 	query := r.URL.Query()
 
 	params := Params{}
 	params.AsyncWorkflow, _ = strconv.ParseBool(query.Get("asyncWorkflow"))
 	params.PanicWorkflow, _ = strconv.ParseBool(query.Get("panicWorkflow"))
-	params.PanicActivity, _ = strconv.ParseInt(query.Get("panicActivity"), 10, 64)
+	params.ActivityErrorType = query.Get("activityErrorType") //none,panic,exit,error
 	params.LocalActivity, _ = strconv.ParseBool(query.Get("localActivity"))
 
 	fmt.Fprintf(w, "<html><body>")
@@ -136,22 +137,30 @@ func Workflow(ctx workflow.Context, params Params) error {
 	}
 
 	if params.LocalActivity {
-		if err := workflow.ExecuteLocalActivity(ctx, Activity, params.PanicActivity).Get(ctx, nil); err != nil {
+		if err := workflow.ExecuteLocalActivity(ctx, Activity, params).Get(ctx, nil); err != nil {
 			fmt.Printf("Local activity returned final error %v", err)
 		}
 	} else {
-		if err := workflow.ExecuteActivity(ctx, Activity, params.PanicActivity).Get(ctx, nil); err != nil {
+		if err := workflow.ExecuteActivity(ctx, Activity, params).Get(ctx, nil); err != nil {
 			fmt.Printf("Standard activity returned final error %v", err)
 		}
 	}
 	return nil
 }
 
-func Activity(ctx context.Context, panicTimes int64) error {
-	if activity.GetInfo(ctx).Attempt < int32(panicTimes) {
-		fmt.Printf("In activity: about to panic\n")
-		panic(fmt.Errorf("randomly breaking to see if local activities are retried"))
+func Activity(ctx context.Context, params Params) error {
+	if activity.GetInfo(ctx).Attempt < 2000 {
+		fmt.Printf("In activity: Attempt %v about to %v\n", activity.GetInfo(ctx).Attempt, params.ActivityErrorType)
+		switch params.ActivityErrorType {
+		case "error":
+			return fmt.Errorf("randomly erroring to see if activities are retried")
+		case "panic":
+			panic(fmt.Errorf("randomly panicking to see if activities are retried"))
+		case "exit":
+			os.Exit(5)
+		}
 	}
-	fmt.Printf("In activity: No panic\n")
+
+	fmt.Printf("In activity: Happy path\n")
 	return nil
 }

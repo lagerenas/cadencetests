@@ -18,4 +18,4 @@ Start the server
 run `go run server/*.go`
 
 Trigger new workflows to start by opening a web browser to this URL. Adjust params as needed.
-http://localhost:8090/?asyncWorkflow=true&panicWorkflow=false&panicActivity=200&localActivity=false
+http://localhost:8090/workflow?asyncWorkflow=true&panicWorkflow=false&activityErrorType=panic&localActivity=false

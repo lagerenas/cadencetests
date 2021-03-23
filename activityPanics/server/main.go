@@ -29,7 +29,7 @@ func main() {
 
 	internal.CadenceClient = cadenceClient
 
-	http.HandleFunc("/", internal.Processor)
+	http.HandleFunc("/workflow", internal.Processor)
 	http.ListenAndServe(":8090", nil)
 
 	fmt.Printf("Stopping shared server\n")
